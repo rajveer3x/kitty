@@ -1,52 +1,75 @@
 # Kitty
 
-Kitty is a small, local-only macOS menu-bar companion that shows a cute animated cat. The cat walks in place during normal use and switches to a more energetic run when aggregate system CPU usage stays above the configured threshold.
+Kitty is a tiny, local-only macOS menu-bar app with a cute animated cat. It stays in one place while its legs and tail move in place. The animation becomes a faster run only when the Mac is under sustained CPU load.
 
-## Features
+## Highlights
 
-- Menu-bar-only app; no Dock window.
-- Aggregate CPU usage sampled every 2 seconds during normal power use.
-- Walking at 4 lightweight keyframes per second.
-- Running at 8 lightweight keyframes per second after CPU stays above 70% for 3 seconds.
-- Returns to walking after CPU stays at or below the threshold for 10 seconds.
-- Pause control changes Kitty to a curled sleeping pose.
-- Animation pauses during sleep and Low Power Mode.
-- CPU sampling relaxes to every 10 seconds in Low Power Mode.
-- Runtime CPU threshold slider, default 70%.
-- Optional macOS Launch at Login toggle using `SMAppService`.
-- Popover closes after 2 seconds without interaction.
+- Menu-bar-only: Kitty does not create a Dock icon or normal app window.
+- Aggregate CPU usage is sampled every 2 seconds during normal power use.
+- Walking uses a small 4 FPS frame set; running uses 8 FPS.
+- Running starts after CPU stays above the configured threshold for 3 seconds.
+- Walking resumes after CPU stays at or below the threshold for 10 seconds.
+- Manual pause changes the cat to a still sleeping pose.
+- Sleep and Low Power Mode pause or greatly reduce work.
+- CPU threshold is adjustable, with a default of 70%.
+- Popover closes automatically after 2 seconds without interaction.
+- Optional **Launch Kitty at login** support.
 
-## Privacy and safety
+## Privacy, safety, and battery use
 
-Kitty is fully local. It reads only aggregate Mach CPU counters and macOS sleep/power state. It does not inspect individual processes, files, microphone, camera, screen, keyboard input, Accessibility APIs, or network resources. It does not collect, upload, or persist usage data. The threshold and pause controls are runtime-only; macOS manages the optional Login Item registration.
+Kitty works entirely on the Mac. It reads only aggregate Mach CPU counters and macOS sleep/power state. It does not use networking, inspect individual processes or files, access the microphone, camera, screen recording, Accessibility APIs, or collect any personal data.
 
-The target uses App Sandbox and has no App Groups or network entitlement. No login item is enabled until the user turns on **Launch Kitty at login** in Kitty’s menu.
-
-No software can use literally zero energy, but Kitty is intentionally conservative: the expensive work is a tiny vector status item, CPU sampling is infrequent, and animation is disabled or greatly reduced in sleep, pause, and Low Power Mode.
+The app uses App Sandbox and Hardened Runtime. It has no network entitlement and no App Groups. CPU sampling is intentionally infrequent, animation uses a tiny vector view, and work is paused or reduced during sleep, Low Power Mode, or manual pause. No app can use literally zero energy, but Kitty is designed to have a very small battery and CPU footprint.
 
 ## Run from Xcode
 
 1. Open `kitty.xcodeproj` in Xcode.
 2. Select the `kitty` scheme and **My Mac**.
-3. Press `⌘R`.
-4. Look in the macOS menu bar; Kitty does not open a normal window.
+3. Press **⌘R**.
+4. Look at the macOS menu bar for the cat. Kitty does not open a normal window.
 
-## Install without Xcode
+## Install and run without Xcode
 
-1. Choose **Product → Archive**.
-2. In Organizer, choose **Distribute App → Direct Distribution**.
-3. Export or copy `Kitty.app` into `/Applications`.
-4. Open it once, then enable **Launch Kitty at login** if desired.
+For personal use, the simplest export is **Copy App**:
+
+1. In Xcode choose **Product → Archive**.
+2. In Organizer choose **Distribute App → Custom → Copy App**.
+3. Choose a destination such as Desktop and click **Export**.
+4. Open the exported folder and drag `Kitty.app` into `/Applications`.
+5. Launch Kitty from Applications or Spotlight. Xcode can now be closed.
+
+If Xcode asks for a signing team, select your Apple ID under the target's **Signing & Capabilities** tab and enable **Automatically manage signing**. Create a new archive after changing signing settings; do not reuse an older archive.
+
+## What “Launch Kitty at login” means
+
+When enabled, macOS starts Kitty automatically after you sign in. It does not keep Xcode open, create a separate background daemon, or send anything over the network. Kitty registers only the app itself through Apple's `SMAppService` Login Item API.
+
+To use it safely:
+
+1. Install `Kitty.app` in `/Applications` first.
+2. Open the menu-bar cat and enable **Launch Kitty at login**.
+3. macOS may show Kitty under **System Settings → General → Login Items**.
+
+Turn the toggle off in Kitty, or remove Kitty from Login Items, to stop automatic launch. The setting is optional and is off by default.
+
+## Menu controls
+
+- Current CPU usage
+- CPU threshold slider
+- Pause/resume animation
+- Launch Kitty at login
+- Quit Kitty
 
 ## Project structure
 
-- `kitty/kittyApp.swift` — SwiftUI app lifecycle and agent-only Settings scene.
-- `kitty/AppDelegate.swift` — reliable AppKit status-bar slot and SwiftUI popover.
-- `kitty/CPUMonitor.swift` — local CPU sampling, gait thresholds, sleep/power handling.
-- `kitty/CatStatusItem.swift` — chibi vector cat, smooth walk/run keyframes, and sleeping pose.
-- `kitty/KittyMenu.swift` — CPU readout and controls.
-- `kitty/LoginItemManager.swift` — user-controlled macOS Login Item registration.
+- `kitty/kittyApp.swift` — SwiftUI app entry point and menu-bar scene.
+- `kitty/AppDelegate.swift` — AppKit status item and popover lifecycle.
+- `kitty/CPUMonitor.swift` — local CPU sampling, gait thresholds, and power-state handling.
+- `kitty/CatStatusItem.swift` — vector cat, walking/running frames, tail motion, and sleeping pose.
+- `kitty/KittyMenu.swift` — CPU readout and user controls.
+- `kitty/LoginItemManager.swift` — optional macOS Login Item registration.
+- `kitty/Assets.xcassets/AppIcon.appiconset` — Kitty application icon and retina variants.
 
 ## Verification
 
-The source is type-checked with the project’s Swift concurrency settings. Full Xcode archive/signing requires Xcode and the local developer account.
+The Swift sources are type-checked with the project's concurrency settings. Full archive, signing, and export are performed by Xcode using the developer account configured on the Mac.
