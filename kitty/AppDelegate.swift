@@ -65,7 +65,7 @@ final class KittyStatusController: NSObject {
 
     private func beginTrackingPopoverActivity() {
         resetDismissTimer()
-        activityMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .mouseMoved, .scrollWheel, .keyDown]) { [weak self] event in
+        activityMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .mouseMoved, .scrollWheel]) { [weak self] event in
             MainActor.assumeIsolated { self?.resetDismissTimer() }
             return event
         }

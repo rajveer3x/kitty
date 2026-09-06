@@ -10,12 +10,13 @@ final class CPUMonitor: ObservableObject {
     @Published private(set) var usagePercent: Double = 0
     @Published private(set) var gait: Gait = .walking
     @Published private(set) var isSystemAsleep = false
+    @Published private(set) var isLowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
     /// Runtime-only settings deliberately are not persisted to disk.
     @Published var threshold: Double = 70
     @Published var isAnimationPaused = false
 
     var shouldAnimate: Bool {
-        !isAnimationPaused && !isSystemAsleep && !ProcessInfo.processInfo.isLowPowerModeEnabled
+        !isAnimationPaused && !isSystemAsleep && !isLowPowerModeEnabled
     }
 
     private var timer: Timer?
@@ -27,15 +28,7 @@ final class CPUMonitor: ObservableObject {
     init() {
         observeSleepWake()
         sampleCPU()
-        let timer = Timer(timeInterval: 2, repeats: true) { [weak self] _ in
-            // The timer is installed on the main run loop, so this is actor-safe
-            // without creating a new task on every two-second tick.
-            MainActor.assumeIsolated {
-                self?.sampleCPU()
-            }
-        }
-        RunLoop.main.add(timer, forMode: .common)
-        self.timer = timer
+        scheduleSamplingTimer()
     }
 
     deinit {
@@ -64,6 +57,7 @@ final class CPUMonitor: ObservableObject {
     }
 
     private func sampleCPU() {
+        refreshPowerMode()
         guard let ticks = readCPUTicks() else { return }
         defer { previousTicks = ticks }
         guard let previousTicks else { return }
@@ -74,6 +68,25 @@ final class CPUMonitor: ObservableObject {
         guard totalDelta > 0 else { return }
         usagePercent = min(max(Double(busyDelta) / Double(totalDelta) * 100, 0), 100)
         updateGait(at: Date())
+    }
+
+    private func refreshPowerMode() {
+        let current = ProcessInfo.processInfo.isLowPowerModeEnabled
+        guard current != isLowPowerModeEnabled else { return }
+        isLowPowerModeEnabled = current
+        scheduleSamplingTimer()
+    }
+
+    private func scheduleSamplingTimer() {
+        timer?.invalidate()
+        let interval: TimeInterval = isLowPowerModeEnabled ? 10 : 2
+        let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
+            // The timer is installed on the main run loop, so this is actor-safe
+            // without creating a new task on every sampling tick.
+            MainActor.assumeIsolated { self?.sampleCPU() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
     }
 
     private func updateGait(at now: Date) {
