@@ -1,17 +1,12 @@
-//
-//  kittyApp.swift
-//  kitty
-//
-//  Created by Rajveer Singh on 06/09/26.
-//
-
 import SwiftUI
 
 @main
-struct kittyApp: App {
+struct KittyApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
+        // A settings scene satisfies the SwiftUI app lifecycle without opening
+        // a window. The application is an LSUIElement, so it stays menu-bar only.
+        Settings { EmptyView() }
     }
 }
